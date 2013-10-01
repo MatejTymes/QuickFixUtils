@@ -4,6 +4,7 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import quickfix.FieldMap;
 import quickfix.FieldNotFound;
+import quickfix.Group;
 import quickfix.Message;
 
 import java.math.BigDecimal;
@@ -13,13 +14,13 @@ import java.util.*;
  * @author mtymes
  * @since 9/29/13 8:22 PM
  */
-// TODO: add group mapping
 // TODO: start using field matchers so we can introduce extensions
 public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Message> {
 
     private final Class<T> messageType;
     private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final List<FieldValue> headerFieldValues = new ArrayList<FieldValue>();
+    private final Map<GroupId, List<FieldValue>> groupFieldValues = new HashMap<GroupId, List<FieldValue>>();
 
     public FIXMessageMatcher(Class<T> messageType) {
         this.messageType = messageType;
@@ -39,6 +40,18 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
         return this;
     }
 
+    public FIXMessageMatcher<T> withGroup(int index, int groupTag, int fieldId, Object value) {
+        GroupId groupId = new GroupId(index, groupTag);
+        FieldValue fieldValue = new FieldValue(fieldId, value);
+        List<FieldValue> fieldValues = groupFieldValues.get(groupId);
+        if (fieldValues == null) {
+            fieldValues = new ArrayList<FieldValue>();
+            groupFieldValues.put(groupId, fieldValues);
+        }
+        fieldValues.add(fieldValue);
+        return this;
+    }
+
     @Override
     protected boolean matchesSafely(Message message) {
         boolean matches = true;
@@ -48,15 +61,27 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
         }
 
         for (FieldValue fieldValue : fieldValues) {
-            matches &= matchesValue(message, fieldValue.getFieldId(), fieldValue.getValue());
+            matches &= hasFieldValue(message, fieldValue);
         }
 
         Message.Header header = message.getHeader();
         for (FieldValue fieldValue : headerFieldValues) {
-            matches &= matchesValue(header, fieldValue.getFieldId(), fieldValue.getValue());
+            matches &= hasFieldValue(header, fieldValue);
         }
 
-        // TODO: implement group field matching
+        for (GroupId groupId : groupFieldValues.keySet())
+        {
+            try {
+                Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
+
+                for (FieldValue fieldValue : groupFieldValues.get(groupId)) {
+                    matches &= hasFieldValue(group, fieldValue);
+                }
+
+            } catch (FieldNotFound e) {
+                matches &= false;
+            }
+        }
 
         return matches;
     }
@@ -71,25 +96,27 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
     /* ---     helper methods     --- */
     /* ============================== */
 
-    private boolean matchesValue(FieldMap fieldMap, Integer fieldId, Object fieldValue) {
+    private boolean hasFieldValue(FieldMap fieldMap, FieldValue fieldValue) {
         boolean matches;
 
-        if (fieldValue instanceof String) {
-            matches = hasValue(fieldMap, fieldId, (String) fieldValue);
-        } else if (fieldValue instanceof Character) {
-            matches = hasValue(fieldMap, fieldId, (Character) fieldValue);
-        } else if (fieldValue instanceof Integer) {
-            matches = hasValue(fieldMap, fieldId, (Integer) fieldValue);
-        } else if (fieldValue instanceof Double) {
-            matches = hasValue(fieldMap, fieldId, (Double) fieldValue);
-        } else if (fieldValue instanceof BigDecimal) {
-            matches = hasValue(fieldMap, fieldId, (BigDecimal) fieldValue);
-        } else if (fieldValue instanceof Date) {
-            matches = hasValue(fieldMap, fieldId, (Date) fieldValue);
-        } else if (fieldValue instanceof Boolean) {
-            matches = hasValue(fieldMap, fieldId, (Boolean) fieldValue);
+        int fieldId = fieldValue.getFieldId();
+        Object value = fieldValue.getValue();
+        if (value instanceof String) {
+            matches = hasValue(fieldMap, fieldId, (String) value);
+        } else if (value instanceof Character) {
+            matches = hasValue(fieldMap, fieldId, (Character) value);
+        } else if (value instanceof Integer) {
+            matches = hasValue(fieldMap, fieldId, (Integer) value);
+        } else if (value instanceof Double) {
+            matches = hasValue(fieldMap, fieldId, (Double) value);
+        } else if (value instanceof BigDecimal) {
+            matches = hasValue(fieldMap, fieldId, (BigDecimal) value);
+        } else if (value instanceof Date) {
+            matches = hasValue(fieldMap, fieldId, (Date) value);
+        } else if (value instanceof Boolean) {
+            matches = hasValue(fieldMap, fieldId, (Boolean) value);
         } else {
-            throw new IllegalArgumentException(String.format("unable to process field %d with value type %s", fieldId, fieldValue.getClass()));
+            throw new IllegalArgumentException(String.format("unable to process field %d with value type %s", fieldId, value.getClass()));
         }
         return matches;
     }
