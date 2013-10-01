@@ -14,6 +14,7 @@ import java.util.*;
  * @author mtymes
  * @since 9/29/13 8:22 PM
  */
+// TODO: doesn't have to be generic - the messageType can be undefined
 // TODO: start using field matchers so we can introduce extensions
 public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Message> {
 
@@ -26,7 +27,7 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
         this.messageType = messageType;
     }
 
-    public static <T extends Message> FIXMessageMatcher<T> fixMessageOfType(Class<T> messageType) {
+    public static <T extends Message> FIXMessageMatcher<T> isFixMessageOfType(Class<T> messageType) {
         return new FIXMessageMatcher<T>(messageType);
     }
 
@@ -40,8 +41,13 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
         return this;
     }
 
-    public FIXMessageMatcher<T> withGroup(int index, int groupTag, int fieldId, Object value) {
-        GroupId groupId = new GroupId(index, groupTag);
+    public FIXMessageMatcher<T> with(Header header) {
+        headerFieldValues.addAll(header.getFieldValues());
+        return this;
+    }
+
+    public FIXMessageMatcher<T> withGroup(int groupIndex, int groupTag, int fieldId, Object value) {
+        GroupId groupId = new GroupId(groupIndex, groupTag);
         FieldValue fieldValue = new FieldValue(fieldId, value);
         List<FieldValue> fieldValues = groupFieldValues.get(groupId);
         if (fieldValues == null) {
@@ -49,6 +55,17 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
             groupFieldValues.put(groupId, fieldValues);
         }
         fieldValues.add(fieldValue);
+        return this;
+    }
+
+    public FIXMessageMatcher<T> with(com.matejtymes.qfu.matcher.Group group) {
+        GroupId groupId = group.getGroupId();
+        List<FieldValue> fieldValues = groupFieldValues.get(groupId);
+        if (fieldValues == null) {
+            fieldValues = new ArrayList<FieldValue>();
+            groupFieldValues.put(groupId, fieldValues);
+        }
+        fieldValues.addAll(group.getFieldValues());
         return this;
     }
 
