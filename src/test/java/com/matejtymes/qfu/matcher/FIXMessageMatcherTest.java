@@ -8,7 +8,7 @@ import quickfix.fix44.NewOrderSingle;
 
 import java.util.Date;
 
-import static com.matejtymes.qfu.matcher.FIXMessageMatcher.isFixMessageOfType;
+import static com.matejtymes.qfu.matcher.FIXMessageMatcher.isFixMessage;
 import static com.matejtymes.qfu.matcher.Group.group;
 import static com.matejtymes.qfu.matcher.Header.header;
 import static org.hamcrest.CoreMatchers.is;
@@ -26,7 +26,7 @@ public class FIXMessageMatcherTest {
         Message message = new NewOrderSingle();
 
         // When
-        FIXMessageMatcher<NewOrderSingle> matcher = isFixMessageOfType(NewOrderSingle.class);
+        FIXMessageMatcher matcher = isFixMessage().ofType(NewOrderSingle.class);
 
         // Then
         assertThat(matcher.matchesSafely(message), is(true));
@@ -38,7 +38,7 @@ public class FIXMessageMatcherTest {
         Message message = new NewOrderSingle();
 
         // When
-        FIXMessageMatcher<NewOrderList> matcher = isFixMessageOfType(NewOrderList.class);
+        FIXMessageMatcher matcher = isFixMessage().ofType(NewOrderList.class);
 
         // Then
         assertThat(matcher.matchesSafely(message), is(false));
@@ -51,8 +51,7 @@ public class FIXMessageMatcherTest {
         message.set(new ClOrdID("clOrdId-123"));
 
         // When
-        FIXMessageMatcher<NewOrderSingle> matcher = isFixMessageOfType(NewOrderSingle.class)
-                .with(ClOrdID.FIELD, "clOrdId-123");
+        FIXMessageMatcher matcher = isFixMessage().with(ClOrdID.FIELD, "clOrdId-123");
 
         // Then
         assertThat(matcher.matchesSafely(message), is(true));
@@ -65,8 +64,7 @@ public class FIXMessageMatcherTest {
         message.set(new ClOrdID("clOrdId-123"));
 
         // When
-        FIXMessageMatcher<NewOrderSingle> matcher = isFixMessageOfType(NewOrderSingle.class)
-                .with(ClOrdID.FIELD, "clOdrId-456");
+        FIXMessageMatcher matcher = isFixMessage().with(ClOrdID.FIELD, "clOdrId-456");
 
         // Then
         assertThat(matcher.matchesSafely(message), is(false));
@@ -79,10 +77,7 @@ public class FIXMessageMatcherTest {
         message.getHeader().setField(new SenderSubID("senderSubId-123"));
 
         // When
-        FIXMessageMatcher<NewOrderSingle> matcher = isFixMessageOfType(NewOrderSingle.class)
-                .withHeader(SenderSubID.FIELD, "senderSubId-123")
-//                .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
-                ;
+        FIXMessageMatcher matcher = isFixMessage().withHeader(SenderSubID.FIELD, "senderSubId-123");
 
         // Then
         assertThat(matcher.matchesSafely(message), is(true));
@@ -95,8 +90,7 @@ public class FIXMessageMatcherTest {
         message.getHeader().setField(new SenderSubID("senderSubId-123"));
 
         // When
-        FIXMessageMatcher<NewOrderSingle> matcher = isFixMessageOfType(NewOrderSingle.class)
-                .withHeader(SenderSubID.FIELD, "senderSubId-456");
+        FIXMessageMatcher matcher = isFixMessage().withHeader(SenderSubID.FIELD, "senderSubId-456");
 
         // Then
         assertThat(matcher.matchesSafely(message), is(false));
@@ -111,10 +105,7 @@ public class FIXMessageMatcherTest {
         message.addGroup(group);
 
         // When
-        FIXMessageMatcher<NewOrderList> matcher = isFixMessageOfType(NewOrderList.class)
-                .withGroup(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123")
-//                .with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-123"))
-                ;
+        FIXMessageMatcher matcher = isFixMessage().withGroup(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123");
 
         // Then
         assertThat(matcher.matchesSafely(message), is(true));
@@ -129,8 +120,7 @@ public class FIXMessageMatcherTest {
         message.addGroup(group);
 
         // When
-        FIXMessageMatcher<NewOrderList> matcher = isFixMessageOfType(NewOrderList.class)
-                .withGroup(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456");
+        FIXMessageMatcher matcher = isFixMessage().withGroup(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456");
 
         // Then
         assertThat(matcher.matchesSafely(message), is(false));
@@ -153,7 +143,7 @@ public class FIXMessageMatcherTest {
         message.addGroup(group);
 
         // When
-        FIXMessageMatcher<NewOrderList> matcher = isFixMessageOfType(NewOrderList.class)
+        FIXMessageMatcher matcher = isFixMessage(NewOrderList.class)
                 .withHeader(SenderSubID.FIELD, "senderSubId-123")
                 .with(ListID.FIELD, "listId-123")
                 .with(BidType.FIELD, BidType.NON_DISCLOSED)
@@ -184,7 +174,7 @@ public class FIXMessageMatcherTest {
         message.addGroup(group);
 
         // When
-        FIXMessageMatcher<NewOrderList> matcher = isFixMessageOfType(NewOrderList.class)
+        FIXMessageMatcher matcher = isFixMessage(NewOrderList.class)
                 .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
                 .with(ListID.FIELD, "listId-123")
                 .with(BidType.FIELD, BidType.NON_DISCLOSED)

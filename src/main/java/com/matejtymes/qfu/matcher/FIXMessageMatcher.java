@@ -14,39 +14,47 @@ import java.util.*;
  * @author mtymes
  * @since 9/29/13 8:22 PM
  */
-// TODO: doesn't have to be generic - the messageType can be undefined
 // TODO: start using field matchers so we can introduce extensions
-public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Message> {
+public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
 
-    private final Class<T> messageType;
+    private Class<? extends Message> messageType;
     private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final List<FieldValue> headerFieldValues = new ArrayList<FieldValue>();
     private final Map<GroupId, List<FieldValue>> groupFieldValues = new HashMap<GroupId, List<FieldValue>>();
 
-    public FIXMessageMatcher(Class<T> messageType) {
+    public static FIXMessageMatcher isFixMessage() {
+        return new FIXMessageMatcher();
+    }
+
+    public static FIXMessageMatcher isFixMessage(Class<? extends Message> messageType) {
+        return new FIXMessageMatcher().ofType(messageType);
+    }
+
+    public FIXMessageMatcher ofType(Class<? extends Message> messageType) {
+        if (this.messageType != null) {
+            // TODO: test this
+            throw new IllegalArgumentException(String.format("message type already defined as %s", this.messageType.getSimpleName()));
+        }
         this.messageType = messageType;
+        return this;
     }
 
-    public static <T extends Message> FIXMessageMatcher<T> isFixMessageOfType(Class<T> messageType) {
-        return new FIXMessageMatcher<T>(messageType);
-    }
-
-    public FIXMessageMatcher<T> with(int fieldId, Object value) {
+    public FIXMessageMatcher with(int fieldId, Object value) {
         fieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
 
-    public FIXMessageMatcher<T> withHeader(int fieldId, Object value) {
+    public FIXMessageMatcher withHeader(int fieldId, Object value) {
         headerFieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
 
-    public FIXMessageMatcher<T> with(Header header) {
+    public FIXMessageMatcher with(Header header) {
         headerFieldValues.addAll(header.getFieldValues());
         return this;
     }
 
-    public FIXMessageMatcher<T> withGroup(int groupIndex, int groupTag, int fieldId, Object value) {
+    public FIXMessageMatcher withGroup(int groupIndex, int groupTag, int fieldId, Object value) {
         GroupId groupId = new GroupId(groupIndex, groupTag);
         FieldValue fieldValue = new FieldValue(fieldId, value);
         List<FieldValue> fieldValues = groupFieldValues.get(groupId);
@@ -58,7 +66,7 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
         return this;
     }
 
-    public FIXMessageMatcher<T> with(com.matejtymes.qfu.matcher.Group group) {
+    public FIXMessageMatcher with(com.matejtymes.qfu.matcher.Group group) {
         GroupId groupId = group.getGroupId();
         List<FieldValue> fieldValues = groupFieldValues.get(groupId);
         if (fieldValues == null) {
@@ -73,7 +81,7 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
     protected boolean matchesSafely(Message message) {
         boolean matches = true;
 
-        if (!messageType.isAssignableFrom(message.getClass())) {
+        if (messageType != null && !messageType.isAssignableFrom(message.getClass())) {
             matches = false;
         }
 
@@ -86,8 +94,7 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
             matches &= hasFieldValue(header, fieldValue);
         }
 
-        for (GroupId groupId : groupFieldValues.keySet())
-        {
+        for (GroupId groupId : groupFieldValues.keySet()) {
             try {
                 Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
 
