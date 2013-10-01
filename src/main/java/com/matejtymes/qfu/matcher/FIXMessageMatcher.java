@@ -7,9 +7,7 @@ import quickfix.FieldNotFound;
 import quickfix.Message;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author mtymes
@@ -20,8 +18,8 @@ import java.util.Map;
 public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Message> {
 
     private final Class<T> messageType;
-    private final Map<Integer, Object> fieldValues = new HashMap<Integer, Object>();
-    private final Map<Integer, Object> headerFieldValues = new HashMap<Integer, Object>();
+    private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
+    private final List<FieldValue> headerFieldValues = new ArrayList<FieldValue>();
 
     public FIXMessageMatcher(Class<T> messageType) {
         this.messageType = messageType;
@@ -32,12 +30,12 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
     }
 
     public FIXMessageMatcher<T> with(int fieldId, Object value) {
-        fieldValues.put(fieldId, value);
+        fieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
 
     public FIXMessageMatcher<T> withHeader(int fieldId, Object value) {
-        headerFieldValues.put(fieldId, value);
+        headerFieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
 
@@ -49,17 +47,16 @@ public class FIXMessageMatcher<T extends Message> extends TypeSafeMatcher<Messag
             matches = false;
         }
 
-        for (Integer fieldId : fieldValues.keySet()) {
-            Object fieldValue = fieldValues.get(fieldId);
-            matches &= matchesValue(message, fieldId, fieldValue);
+        for (FieldValue fieldValue : fieldValues) {
+            matches &= matchesValue(message, fieldValue.getFieldId(), fieldValue.getValue());
         }
 
-        for (Integer fieldId : headerFieldValues.keySet()) {
-            Object fieldValue = headerFieldValues.get(fieldId);
-            matches &= matchesValue(message.getHeader(), fieldId, fieldValue);
+        Message.Header header = message.getHeader();
+        for (FieldValue fieldValue : headerFieldValues) {
+            matches &= matchesValue(header, fieldValue.getFieldId(), fieldValue.getValue());
         }
 
-        // TODO: implement field matching
+        // TODO: implement group field matching
 
         return matches;
     }
