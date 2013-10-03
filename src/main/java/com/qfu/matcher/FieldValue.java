@@ -1,4 +1,4 @@
-package com.matejtymes.qfu.matcher;
+package com.qfu.matcher;
 
 /**
  * @author mtymes

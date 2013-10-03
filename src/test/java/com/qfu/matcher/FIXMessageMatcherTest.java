@@ -1,4 +1,4 @@
-package com.matejtymes.qfu.matcher;
+package com.qfu.matcher;
 
 import org.junit.Test;
 import quickfix.field.*;
@@ -9,9 +9,9 @@ import quickfix.fix44.NewOrderSingle;
 
 import java.util.Date;
 
-import static com.matejtymes.qfu.matcher.FIXMessageMatcher.isFixMessage;
-import static com.matejtymes.qfu.matcher.Group.group;
-import static com.matejtymes.qfu.matcher.Header.header;
+import static com.qfu.matcher.FIXMessageMatcher.isFixMessage;
+import static com.qfu.matcher.Group.group;
+import static com.qfu.matcher.Header.header;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 

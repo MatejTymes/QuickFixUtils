@@ -1,4 +1,4 @@
-package com.matejtymes.qfu.matcher;
+package com.qfu.matcher;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
@@ -66,7 +66,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         return this;
     }
 
-    public FIXMessageMatcher with(com.matejtymes.qfu.matcher.Group group) {
+    public FIXMessageMatcher with(com.qfu.matcher.Group group) {
         GroupId groupId = group.getGroupId();
         List<FieldValue> fieldValues = groupFieldValues.get(groupId);
         if (fieldValues == null) {
