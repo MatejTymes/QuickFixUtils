@@ -10,17 +10,18 @@ import quickfix.Message;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static java.lang.String.format;
+
 /**
  * @author mtymes
  * @since 9/29/13 8:22 PM
  */
-// TODO: start using field matchers so we can introduce extensions
 public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
 
     private Class<? extends Message> messageType;
     private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final List<FieldValue> headerFieldValues = new ArrayList<FieldValue>();
-    private final Map<GroupId, List<FieldValue>> groupFieldValues = new HashMap<GroupId, List<FieldValue>>();
+    private final Map<GroupId, List<FieldValue>> groupFieldValues = new LinkedHashMap<GroupId, List<FieldValue>>();
 
     public static FIXMessageMatcher isFixMessage() {
         return new FIXMessageMatcher();
@@ -33,7 +34,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
     public FIXMessageMatcher ofType(Class<? extends Message> messageType) {
         if (this.messageType != null) {
             // TODO: test this
-            throw new IllegalArgumentException(String.format("message type already defined as %s", this.messageType.getSimpleName()));
+            throw new IllegalArgumentException(format("message type already defined as %s", this.messageType.getSimpleName()));
         }
         this.messageType = messageType;
         return this;
@@ -44,7 +45,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         return this;
     }
 
-    public FIXMessageMatcher withHeader(int fieldId, Object value) {
+    public FIXMessageMatcher withHeaderField(int fieldId, Object value) {
         headerFieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
@@ -54,7 +55,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         return this;
     }
 
-    public FIXMessageMatcher withGroup(int groupIndex, int groupTag, int fieldId, Object value) {
+    public FIXMessageMatcher withGroupField(int groupIndex, int groupTag, int fieldId, Object value) {
         GroupId groupId = new GroupId(groupIndex, groupTag);
         FieldValue fieldValue = new FieldValue(fieldId, value);
         List<FieldValue> fieldValues = groupFieldValues.get(groupId);
@@ -86,24 +87,38 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         }
 
         for (FieldValue fieldValue : fieldValues) {
-            matches &= hasFieldValue(message, fieldValue);
+            if (!hasFieldValue(message, fieldValue)) {
+                matches = false;
+                break;
+            }
         }
 
-        Message.Header header = message.getHeader();
-        for (FieldValue fieldValue : headerFieldValues) {
-            matches &= hasFieldValue(header, fieldValue);
-        }
-
-        for (GroupId groupId : groupFieldValues.keySet()) {
-            try {
-                Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
-
-                for (FieldValue fieldValue : groupFieldValues.get(groupId)) {
-                    matches &= hasFieldValue(group, fieldValue);
+        if (matches) {
+            Message.Header header = message.getHeader();
+            for (FieldValue fieldValue : headerFieldValues) {
+                if (!hasFieldValue(header, fieldValue)) {
+                    matches = false;
+                    break;
                 }
+            }
+        }
 
-            } catch (FieldNotFound e) {
-                matches &= false;
+        if (matches) {
+            for (GroupId groupId : groupFieldValues.keySet()) {
+                try {
+                    Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
+
+                    for (FieldValue fieldValue : groupFieldValues.get(groupId)) {
+                        if (!hasFieldValue(group, fieldValue)) {
+                            matches = false;
+                            break;
+                        }
+                    }
+
+                } catch (FieldNotFound e) {
+                    matches = false;
+                    break;
+                }
             }
         }
 
@@ -112,9 +127,73 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
 
     @Override
     public void describeTo(Description description) {
-        // TODO: implement look at CustomTypeSafeMatcher.describeTo
-//        description.appendText(fixedDescription);
+        description.appendText("a fix message");
+        if (messageType != null) {
+            description.appendText(format(" of Type '%s'", messageType.getSimpleName()));
+        }
+        if (!headerFieldValues.isEmpty()) {
+            description.appendText(format(" with header values: %s", headerFieldValues));
+        }
+        if (!fieldValues.isEmpty()) {
+            description.appendText(format(" with values: %s", fieldValues));
+        }
+        for (GroupId groupId : groupFieldValues.keySet()) {
+            description.appendText(format(" with %d. group %d", groupId.getIndex(), groupId.getGroupTag()));
+            List<FieldValue> groupValues = groupFieldValues.get(groupId);
+            if (!groupValues.isEmpty()) {
+                description.appendText(format(" values: %s", groupValues));
+            }
+        }
     }
+
+    @Override
+    public void describeMismatchSafely(Message message, Description description) {
+        description.appendText("was a message");
+        if (messageType != null) {
+            description.appendText(format(" of Type '%s'", message.getClass().getSimpleName()));
+        }
+        if (!headerFieldValues.isEmpty()) {
+            description.appendText(" with header values: ");
+            describeActualValues(message.getHeader(), headerFieldValues, description);
+        }
+        if (!fieldValues.isEmpty()) {
+            description.appendText(" with values: ");
+            describeActualValues(message, fieldValues, description);
+        }
+        for (GroupId groupId : groupFieldValues.keySet()) {
+            try {
+                Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
+
+                description.appendText(format(" with %d. group %d values: ", groupId.getIndex(), groupId.getGroupTag()));
+                describeActualValues(group, groupFieldValues.get(groupId), description);
+
+            } catch (FieldNotFound fieldNotFound) {
+                description.appendText(format(" with %d. group %d missing", groupId.getIndex(), groupId.getGroupTag()));
+            }
+        }
+    }
+
+    private void describeActualValues(FieldMap fieldMap, List<FieldValue> fieldValues, Description description) {
+        description.appendText("[");
+
+        boolean isFirst = true;
+        for (FieldValue fieldValue : fieldValues) {
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                description.appendText(", ");
+            }
+
+            int fieldId = fieldValue.getFieldId();
+            try {
+                description.appendText(FieldValue.toString(fieldId, fieldMap.getString(fieldId)));
+            } catch (FieldNotFound e) {
+                description.appendText(fieldId + " is undefined");
+            }
+        }
+        description.appendText("]");
+    }
+
 
     /* ============================== */
     /* ---     helper methods     --- */
@@ -140,7 +219,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         } else if (value instanceof Boolean) {
             matches = hasValue(fieldMap, fieldId, (Boolean) value);
         } else {
-            throw new IllegalArgumentException(String.format("unable to process field %d with value type %s", fieldId, value.getClass()));
+            throw new IllegalArgumentException(format("unable to process field %d with value type %s", fieldId, value.getClass()));
         }
         return matches;
     }
@@ -150,7 +229,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         try {
             String actualValue = fieldMap.getString(fieldId);
             matches = expectedValue.equals(actualValue);
-        } catch (FieldNotFound fieldNotFound) {
+        } catch (FieldNotFound e) {
             matches = false;
         }
         return matches;
@@ -161,7 +240,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         try {
             int actualValue = fieldMap.getInt(fieldId);
             matches = (expectedValue == actualValue);
-        } catch (FieldNotFound fieldNotFound) {
+        } catch (FieldNotFound e) {
             matches = false;
         }
         return matches;
@@ -172,7 +251,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         try {
             char actualValue = fieldMap.getChar(fieldId);
             matches = (expectedValue == actualValue);
-        } catch (FieldNotFound fieldNotFound) {
+        } catch (FieldNotFound e) {
             matches = false;
         }
         return matches;
@@ -183,7 +262,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         try {
             double actualValue = fieldMap.getDouble(fieldId);
             matches = (expectedValue == actualValue);
-        } catch (FieldNotFound fieldNotFound) {
+        } catch (FieldNotFound e) {
             matches = false;
         }
         return matches;
@@ -205,7 +284,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         try {
             boolean actualValue = fieldMap.getBoolean(fieldId);
             matches = (expectedValue == actualValue);
-        } catch (FieldNotFound fieldNotFound) {
+        } catch (FieldNotFound e) {
             matches = false;
         }
         return matches;
@@ -214,10 +293,10 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
     private boolean hasValue(FieldMap fieldMap, Integer fieldId, Date expectedValue) {
         boolean matches;
         try {
-            // TODO: there are 3 different methods: getUtcTimeStamp, getUtcTimeOnly, getUtcDateOnly - use all of them
+            // FIXME: there are 3 different methods: getUtcTimeStamp, getUtcTimeOnly, getUtcDateOnly - use all of them
             Date actualValue = fieldMap.getUtcTimeStamp(fieldId);
             matches = expectedValue.equals(actualValue);
-        } catch (FieldNotFound fieldNotFound) {
+        } catch (FieldNotFound e) {
             matches = false;
         }
         return matches;

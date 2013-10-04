@@ -22,4 +22,12 @@ class FieldValue {
     public Object getValue() {
         return value;
     }
+
+    public String toString() {
+        return toString(fieldId, value);
+    }
+
+    public static String toString(int fieldId, Object value) {
+        return fieldId + " = " + value;
+    }
 }

@@ -51,9 +51,9 @@ public class FIXMessageMatcherTest {
         message.getHeader().setField(new SenderSubID("senderSubId-123"));
 
         // When & Then
-        assertThat(message, isFixMessage().withHeader(SenderSubID.FIELD, "senderSubId-123"));
+        assertThat(message, isFixMessage().withHeaderField(SenderSubID.FIELD, "senderSubId-123"));
         assertThat(message, isFixMessage().with(header().with(SenderSubID.FIELD, "senderSubId-123")));
-        assertThat(message, not(isFixMessage().withHeader(SenderSubID.FIELD, "senderSubId-456")));
+        assertThat(message, not(isFixMessage().withHeaderField(SenderSubID.FIELD, "senderSubId-456")));
         assertThat(message, not(isFixMessage().with(header().with(SenderSubID.FIELD, "senderSubId-456"))));
     }
 
@@ -67,9 +67,9 @@ public class FIXMessageMatcherTest {
         message.addGroup(group);
 
         // When & Then
-        assertThat(message, isFixMessage().withGroup(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123"));
+        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123"));
         assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-123")));
-        assertThat(message, not(isFixMessage().withGroup(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456")));
+        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456")));
         assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-456"))));
     }
 
@@ -91,14 +91,14 @@ public class FIXMessageMatcherTest {
 
         // When & Then
         assertThat(message, isFixMessage(NewOrderList.class)
-                .withHeader(SenderSubID.FIELD, "senderSubId-123")
+                .withHeaderField(SenderSubID.FIELD, "senderSubId-123")
                 .with(ListID.FIELD, "listId-123")
                 .with(BidType.FIELD, BidType.NON_DISCLOSED)
                 .with(TotNoOrders.FIELD, 1)
-                .withGroup(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123")
-                .withGroup(1, NoOrders.FIELD, Side.FIELD, Side.SELL)
-                .withGroup(1, NoOrders.FIELD, TransactTime.FIELD, now)
-                .withGroup(1, NoOrders.FIELD, OrdType.FIELD, OrdType.FOREX_MARKET)
+                .withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123")
+                .withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.SELL)
+                .withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, now)
+                .withGroupField(1, NoOrders.FIELD, OrdType.FIELD, OrdType.FOREX_MARKET)
         );
 
         assertThat(message, isFixMessage(NewOrderList.class)
@@ -114,4 +114,20 @@ public class FIXMessageMatcherTest {
                 )
         );
     }
+
+    // TODO: add message text test
+//    assertThat(message, isFixMessage(NewOrderList.class)
+//            .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
+//            .with(ListID.FIELD, "listId-123")
+//            .with(BidType.FIELD, BidType.NON_DISCLOSED)
+//            .with(TotNoOrders.FIELD, 1)
+//            .with(group(1, NoOrders.FIELD)
+//                    .with(ClOrdID.FIELD, "clOrdId-123")
+//                    .with(Side.FIELD, Side.SELL)
+//                    .with(TransactTime.FIELD, now)
+//                    .with(OrdType.FIELD, OrdType.FOREX_MARKET)
+//                    .with(ClOrdID.FIELD, "otherClOrdID")
+//            )
+//            .with(group(2, NoOrders.FIELD))
+//    );
 }
