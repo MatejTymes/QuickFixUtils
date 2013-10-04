@@ -19,8 +19,8 @@ import static java.lang.String.format;
 public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
 
     private Class<? extends Message> messageType;
-    private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final List<FieldValue> headerFieldValues = new ArrayList<FieldValue>();
+    private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final Map<GroupId, List<FieldValue>> groupFieldValues = new LinkedHashMap<GroupId, List<FieldValue>>();
 
     public static FIXMessageMatcher isFixMessage() {
@@ -33,15 +33,9 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
 
     public FIXMessageMatcher ofType(Class<? extends Message> messageType) {
         if (this.messageType != null) {
-            // TODO: test this
             throw new IllegalArgumentException(format("message type already defined as %s", this.messageType.getSimpleName()));
         }
         this.messageType = messageType;
-        return this;
-    }
-
-    public FIXMessageMatcher with(int fieldId, Object value) {
-        fieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
 
@@ -52,6 +46,11 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
 
     public FIXMessageMatcher with(Header header) {
         headerFieldValues.addAll(header.getFieldValues());
+        return this;
+    }
+
+    public FIXMessageMatcher with(int fieldId, Object value) {
+        fieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
 
@@ -125,6 +124,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         return matches;
     }
 
+    // TODO: test this
     @Override
     public void describeTo(Description description) {
         description.appendText("a fix message");
@@ -140,12 +140,15 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         for (GroupId groupId : groupFieldValues.keySet()) {
             description.appendText(format(" with %d. group %d", groupId.getIndex(), groupId.getGroupTag()));
             List<FieldValue> groupValues = groupFieldValues.get(groupId);
-            if (!groupValues.isEmpty()) {
+            if (groupValues.isEmpty()) {
+                description.appendText(" present");
+            } else {
                 description.appendText(format(" values: %s", groupValues));
             }
         }
     }
 
+    // TODO: test this
     @Override
     public void describeMismatchSafely(Message message, Description description) {
         description.appendText("was a message");
@@ -172,28 +175,6 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
             }
         }
     }
-
-    private void describeActualValues(FieldMap fieldMap, List<FieldValue> fieldValues, Description description) {
-        description.appendText("[");
-
-        boolean isFirst = true;
-        for (FieldValue fieldValue : fieldValues) {
-            if (isFirst) {
-                isFirst = false;
-            } else {
-                description.appendText(", ");
-            }
-
-            int fieldId = fieldValue.getFieldId();
-            try {
-                description.appendText(FieldValue.toString(fieldId, fieldMap.getString(fieldId)));
-            } catch (FieldNotFound e) {
-                description.appendText(fieldId + " is undefined");
-            }
-        }
-        description.appendText("]");
-    }
-
 
     /* ============================== */
     /* ---     helper methods     --- */
@@ -300,5 +281,26 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
             matches = false;
         }
         return matches;
+    }
+
+    private void describeActualValues(FieldMap fieldMap, List<FieldValue> fieldValues, Description description) {
+        description.appendText("[");
+
+        boolean isFirst = true;
+        for (FieldValue fieldValue : fieldValues) {
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                description.appendText(", ");
+            }
+
+            int fieldId = fieldValue.getFieldId();
+            try {
+                description.appendText(FieldValue.toString(fieldId, fieldMap.getString(fieldId)));
+            } catch (FieldNotFound e) {
+                description.appendText(fieldId + " is undefined");
+            }
+        }
+        description.appendText("]");
     }
 }
