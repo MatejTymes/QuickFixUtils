@@ -1,9 +1,9 @@
 package com.qfu.matcher;
 
 import org.junit.Test;
+import quickfix.Message;
 import quickfix.field.*;
 import quickfix.fix44.ExecutionReport;
-import quickfix.fix44.Message;
 import quickfix.fix44.NewOrderList;
 import quickfix.fix44.NewOrderSingle;
 
@@ -91,10 +91,12 @@ public class FIXMessageMatcherTest {
     }
 
     @Test
-    public void shouldMatchFIXMessageBasedOnStringHeaderValue() {
+    public void shouldMatchFIXMessageBasedOnHeaderFieldValues() {
         // Given
         NewOrderSingle message = new NewOrderSingle();
-        message.getHeader().setField(new SenderSubID("senderSubId-123"));
+        Message.Header header = message.getHeader();
+        header.setField(new SenderSubID("senderSubId-123"));
+        // TODO: add remaining data types
 
         // When & Then
         assertThat(message, isFixMessage().withHeaderField(SenderSubID.FIELD, "senderSubId-123"));
@@ -108,28 +110,65 @@ public class FIXMessageMatcherTest {
         // Given
         Message message = new NewOrderList();
 
-        NewOrderList.NoOrders group = new NewOrderList.NoOrders();
-        message.addGroup(group);
+        message.addGroup(new NewOrderList.NoOrders());
+        message.addGroup(new NewOrderList.NoOrders());
 
         // When & Then
         assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD)));
-        assertThat(message, not(isFixMessage().with(group(2, NoOrders.FIELD))));
+        assertThat(message, isFixMessage().with(group(2, NoOrders.FIELD)));
+        assertThat(message, not(isFixMessage().with(group(3, NoOrders.FIELD))));
     }
 
     @Test
-    public void shouldMatchFIXMessageBasedOnStringGroupValue() {
+    public void shouldMatchFIXMessageBasedOnGroupFieldValue() {
         // Given
         Message message = new NewOrderList();
-
         NewOrderList.NoOrders group = new NewOrderList.NoOrders();
-        group.set(new ClOrdID("clOrdId-123"));
+        group.set(new ClOrdID("clOrdId-123")); // String field
+        group.set(new Side(Side.BUY)); // char field
+        group.set(new PriceType(PriceType.FIXED_AMOUNT)); // int field
+        group.set(new Price(1.25d)); // double/decimal field
+        Date now = new Date();
+        group.set(new TransactTime(now)); // Date field
+        group.set(new SolicitedFlag(false));
         message.addGroup(group);
 
         // When & Then
+        // String
         assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123"));
         assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-123")));
         assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456")));
         assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-456"))));
+        // char
+        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.BUY));
+        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.BUY)));
+        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.SELL)));
+        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.SELL))));
+        // int
+        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.FIXED_AMOUNT));
+        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.FIXED_AMOUNT)));
+        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.DISCOUNT)));
+        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.DISCOUNT))));
+        // double
+        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, 1.25d));
+        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, 1.25d)));
+        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, 3.5d)));
+        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, 3.5d))));
+        // BigDecimal
+        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("1.25")));
+        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("1.25"))));
+        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("3.5"))));
+        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("3.5")))));
+        // Date
+        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, now));
+        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, now)));
+        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, new Date(now.getTime() + 100L))));
+        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, new Date(now.getTime() + 100L)))));
+        // BigDecimal
+        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, false));
+        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, false)));
+        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, true)));
+        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, true))));
     }
 
     @Test
