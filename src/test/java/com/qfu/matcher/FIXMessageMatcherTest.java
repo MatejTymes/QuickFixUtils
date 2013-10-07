@@ -10,7 +10,6 @@ import quickfix.fix44.NewOrderSingle;
 import java.math.BigDecimal;
 import java.util.Date;
 
-import static com.qfu.matcher.FIXMessageMatcher.isFixMessage;
 import static com.qfu.matcher.Group.group;
 import static com.qfu.matcher.Header.header;
 import static org.hamcrest.CoreMatchers.not;
@@ -29,25 +28,15 @@ public class FIXMessageMatcherTest {
         NewOrderSingle message = new NewOrderSingle();
 
         // When & Then
-        assertThat(message, isFixMessage(NewOrderSingle.class));
-        assertThat(message, isFixMessage().ofType(NewOrderSingle.class));
-        assertThat(message, isFixMessage(Message.class));
-        assertThat(message, isFixMessage().ofType(Message.class));
-        assertThat(message, not(isFixMessage(ExecutionReport.class)));
-        assertThat(message, not(isFixMessage().ofType(ExecutionReport.class)));
+        assertThat(message, new FIXMessageMatcher().ofType(NewOrderSingle.class));
+        assertThat(message, new FIXMessageMatcher().ofType(Message.class));
+        assertThat(message, not(new FIXMessageMatcher().ofType(ExecutionReport.class)));
     }
 
     @Test
     public void shouldNotBeAllowedToDefineMessageTypeTwice() {
         try {
-            isFixMessage(NewOrderList.class).ofType(NewOrderList.class);
-            fail("Expected IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            // this is expected
-        }
-
-        try {
-            isFixMessage().ofType(NewOrderList.class).ofType(NewOrderList.class);
+            new FIXMessageMatcher().ofType(NewOrderList.class).ofType(NewOrderList.class);
             fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
             // this is expected
@@ -68,26 +57,26 @@ public class FIXMessageMatcherTest {
 
         // When & Then
         // String
-        assertThat(message, isFixMessage().with(ClOrdID.FIELD, "clOrdId-123"));
-        assertThat(message, not(isFixMessage().with(ClOrdID.FIELD, "clOrdId-456")));
+        assertThat(message, new FIXMessageMatcher().with(ClOrdID.FIELD, "clOrdId-123"));
+        assertThat(message, not(new FIXMessageMatcher().with(ClOrdID.FIELD, "clOrdId-456")));
         // char
-        assertThat(message, isFixMessage().with(Side.FIELD, Side.BUY));
-        assertThat(message, not(isFixMessage().with(Side.FIELD, Side.SELL)));
+        assertThat(message, new FIXMessageMatcher().with(Side.FIELD, Side.BUY));
+        assertThat(message, not(new FIXMessageMatcher().with(Side.FIELD, Side.SELL)));
         // int
-        assertThat(message, isFixMessage().with(PriceType.FIELD, PriceType.FIXED_AMOUNT));
-        assertThat(message, not(isFixMessage().with(PriceType.FIELD, PriceType.DISCOUNT)));
+        assertThat(message, new FIXMessageMatcher().with(PriceType.FIELD, PriceType.FIXED_AMOUNT));
+        assertThat(message, not(new FIXMessageMatcher().with(PriceType.FIELD, PriceType.DISCOUNT)));
         // double
-        assertThat(message, isFixMessage().with(Price.FIELD, 1.25d));
-        assertThat(message, not(isFixMessage().with(Price.FIELD, 3.5d)));
+        assertThat(message, new FIXMessageMatcher().with(Price.FIELD, 1.25d));
+        assertThat(message, not(new FIXMessageMatcher().with(Price.FIELD, 3.5d)));
         // BigDecimal
-        assertThat(message, isFixMessage().with(Price.FIELD, new BigDecimal("1.25")));
-        assertThat(message, not(isFixMessage().with(Price.FIELD, new BigDecimal("3.5"))));
+        assertThat(message, new FIXMessageMatcher().with(Price.FIELD, new BigDecimal("1.25")));
+        assertThat(message, not(new FIXMessageMatcher().with(Price.FIELD, new BigDecimal("3.5"))));
         // Date
-        assertThat(message, isFixMessage().with(TransactTime.FIELD, now));
-        assertThat(message, not(isFixMessage().with(TransactTime.FIELD, new Date(now.getTime() + 100L))));
+        assertThat(message, new FIXMessageMatcher().with(TransactTime.FIELD, now));
+        assertThat(message, not(new FIXMessageMatcher().with(TransactTime.FIELD, new Date(now.getTime() + 100L))));
         // boolean
-        assertThat(message, isFixMessage().with(SolicitedFlag.FIELD, false));
-        assertThat(message, not(isFixMessage().with(SolicitedFlag.FIELD, true)));
+        assertThat(message, new FIXMessageMatcher().with(SolicitedFlag.FIELD, false));
+        assertThat(message, not(new FIXMessageMatcher().with(SolicitedFlag.FIELD, true)));
     }
 
     @Test
@@ -99,10 +88,10 @@ public class FIXMessageMatcherTest {
         // TODO: add remaining data types
 
         // When & Then
-        assertThat(message, isFixMessage().withHeaderField(SenderSubID.FIELD, "senderSubId-123"));
-        assertThat(message, isFixMessage().with(header().with(SenderSubID.FIELD, "senderSubId-123")));
-        assertThat(message, not(isFixMessage().withHeaderField(SenderSubID.FIELD, "senderSubId-456")));
-        assertThat(message, not(isFixMessage().with(header().with(SenderSubID.FIELD, "senderSubId-456"))));
+        assertThat(message, new FIXMessageMatcher().withHeaderField(SenderSubID.FIELD, "senderSubId-123"));
+        assertThat(message, new FIXMessageMatcher().with(header().with(SenderSubID.FIELD, "senderSubId-123")));
+        assertThat(message, not(new FIXMessageMatcher().withHeaderField(SenderSubID.FIELD, "senderSubId-456")));
+        assertThat(message, not(new FIXMessageMatcher().with(header().with(SenderSubID.FIELD, "senderSubId-456"))));
     }
 
     @Test
@@ -114,9 +103,9 @@ public class FIXMessageMatcherTest {
         message.addGroup(new NewOrderList.NoOrders());
 
         // When & Then
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD)));
-        assertThat(message, isFixMessage().with(group(2, NoOrders.FIELD)));
-        assertThat(message, not(isFixMessage().with(group(3, NoOrders.FIELD))));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD)));
+        assertThat(message, new FIXMessageMatcher().with(group(2, NoOrders.FIELD)));
+        assertThat(message, not(new FIXMessageMatcher().with(group(3, NoOrders.FIELD))));
     }
 
     @Test
@@ -135,40 +124,40 @@ public class FIXMessageMatcherTest {
 
         // When & Then
         // String
-        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123"));
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-123")));
-        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456")));
-        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-456"))));
+        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123"));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-123")));
+        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456")));
+        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-456"))));
         // char
-        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.BUY));
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.BUY)));
-        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.SELL)));
-        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.SELL))));
+        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.BUY));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.BUY)));
+        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.SELL)));
+        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.SELL))));
         // int
-        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.FIXED_AMOUNT));
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.FIXED_AMOUNT)));
-        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.DISCOUNT)));
-        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.DISCOUNT))));
+        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.FIXED_AMOUNT));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.FIXED_AMOUNT)));
+        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.DISCOUNT)));
+        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.DISCOUNT))));
         // double
-        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, 1.25d));
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, 1.25d)));
-        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, 3.5d)));
-        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, 3.5d))));
+        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, 1.25d));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, 1.25d)));
+        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, 3.5d)));
+        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, 3.5d))));
         // BigDecimal
-        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("1.25")));
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("1.25"))));
-        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("3.5"))));
-        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("3.5")))));
+        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("1.25")));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("1.25"))));
+        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("3.5"))));
+        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("3.5")))));
         // Date
-        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, now));
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, now)));
-        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, new Date(now.getTime() + 100L))));
-        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, new Date(now.getTime() + 100L)))));
+        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, now));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, now)));
+        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, new Date(now.getTime() + 100L))));
+        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, new Date(now.getTime() + 100L)))));
         // BigDecimal
-        assertThat(message, isFixMessage().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, false));
-        assertThat(message, isFixMessage().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, false)));
-        assertThat(message, not(isFixMessage().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, true)));
-        assertThat(message, not(isFixMessage().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, true))));
+        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, false));
+        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, false)));
+        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, true)));
+        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, true))));
     }
 
     @Test
@@ -188,7 +177,8 @@ public class FIXMessageMatcherTest {
         message.addGroup(group);
 
         // When & Then
-        assertThat(message, isFixMessage(NewOrderList.class)
+        assertThat(message, new FIXMessageMatcher()
+                .ofType(NewOrderList.class)
                 .withHeaderField(SenderSubID.FIELD, "senderSubId-123")
                 .with(ListID.FIELD, "listId-123")
                 .with(BidType.FIELD, BidType.NON_DISCLOSED)
@@ -199,7 +189,8 @@ public class FIXMessageMatcherTest {
                 .withGroupField(1, NoOrders.FIELD, OrdType.FIELD, OrdType.FOREX_MARKET)
         );
 
-        assertThat(message, isFixMessage(NewOrderList.class)
+        assertThat(message, new FIXMessageMatcher()
+                .ofType(NewOrderList.class)
                 .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
                 .with(ListID.FIELD, "listId-123")
                 .with(BidType.FIELD, BidType.NON_DISCLOSED)

@@ -23,14 +23,6 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
     private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final Map<GroupId, List<FieldValue>> groupFieldValues = new LinkedHashMap<GroupId, List<FieldValue>>();
 
-    public static FIXMessageMatcher isFixMessage() {
-        return new FIXMessageMatcher();
-    }
-
-    public static FIXMessageMatcher isFixMessage(Class<? extends Message> messageType) {
-        return new FIXMessageMatcher().ofType(messageType);
-    }
-
     public FIXMessageMatcher ofType(Class<? extends Message> messageType) {
         if (this.messageType != null) {
             throw new IllegalArgumentException(format("message type already defined as %s", this.messageType.getSimpleName()));
@@ -174,6 +166,32 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
                 description.appendText(format(" with %d. group %d missing", groupId.getIndex(), groupId.getGroupTag()));
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        FIXMessageMatcher that = (FIXMessageMatcher) o;
+
+        if (fieldValues != null ? !fieldValues.equals(that.fieldValues) : that.fieldValues != null) return false;
+        if (groupFieldValues != null ? !groupFieldValues.equals(that.groupFieldValues) : that.groupFieldValues != null)
+            return false;
+        if (headerFieldValues != null ? !headerFieldValues.equals(that.headerFieldValues) : that.headerFieldValues != null)
+            return false;
+        if (messageType != null ? !messageType.equals(that.messageType) : that.messageType != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = messageType != null ? messageType.hashCode() : 0;
+        result = 31 * result + (headerFieldValues != null ? headerFieldValues.hashCode() : 0);
+        result = 31 * result + (fieldValues != null ? fieldValues.hashCode() : 0);
+        result = 31 * result + (groupFieldValues != null ? groupFieldValues.hashCode() : 0);
+        return result;
     }
 
     /* ============================== */
