@@ -8,11 +8,11 @@ import quickfix.Message;
  */
 public class FIXMatchers {
 
-    public static FIXMessageMatcher isMessage() {
+    public static FIXMessageMatcher isFIXMessage() {
         return new FIXMessageMatcher();
     }
 
-    public static FIXMessageMatcher isMessage(Class<? extends Message> messageType) {
+    public static FIXMessageMatcher isFIXMessage(Class<? extends Message> messageType) {
         return new FIXMessageMatcher().ofType(messageType);
     }
 }

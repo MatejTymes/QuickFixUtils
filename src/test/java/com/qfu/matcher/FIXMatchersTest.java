@@ -15,7 +15,7 @@ public class FIXMatchersTest {
     @Test
     public void shouldCreateFIXMessageMatcher() {
         // When
-        FIXMessageMatcher matcher = FIXMatchers.isMessage();
+        FIXMessageMatcher matcher = FIXMatchers.isFIXMessage();
 
         // Then
         assertThat(matcher.equals(new FIXMessageMatcher()), is(true));
@@ -24,7 +24,7 @@ public class FIXMatchersTest {
     @Test
     public void shouldCreateFIXMessageMatcherOfType() {
         // When
-        FIXMessageMatcher matcher = FIXMatchers.isMessage(NewOrderSingle.class);
+        FIXMessageMatcher matcher = FIXMatchers.isFIXMessage(NewOrderSingle.class);
 
         // Then
         assertThat(matcher.equals(new FIXMessageMatcher().ofType(NewOrderSingle.class)), is(true));
