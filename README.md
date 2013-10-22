@@ -10,11 +10,9 @@ Hamcrest Matchers
 
 This utility provides hamcrest matchers for FIX message matching. Usage is as follows:
 
-<code>
+```java
 import static com.qfu.matcher.FIXMatchers.isFIXMessage;
-
 import static com.qfu.matcher.Group.group;
-
 import static com.qfu.matcher.Header.header;
 
         assertThat(message, isFIXMessage()
@@ -30,4 +28,4 @@ import static com.qfu.matcher.Header.header;
                         .with(OrdType.FIELD, OrdType.FOREX_MARKET)
                 )
         );
-</code>
+```
