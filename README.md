@@ -11,9 +11,11 @@ Hamcrest Matchers
 This utility provides hamcrest matchers for FIX message matching. Usage is as follows:
 
 ```java
+...
 import static com.qfu.matcher.FIXMatchers.isFIXMessage;
 import static com.qfu.matcher.Group.group;
 import static com.qfu.matcher.Header.header;
+...
 
         assertThat(message, isFIXMessage()
                 .ofType(NewOrderList.class)
@@ -24,7 +26,7 @@ import static com.qfu.matcher.Header.header;
                 .with(group(1, NoOrders.FIELD)
                         .with(ClOrdID.FIELD, "clOrdId-123")
                         .with(Side.FIELD, Side.SELL)
-                        .with(TransactTime.FIELD, now)
+                        .with(TransactTime.FIELD, new Date())
                         .with(OrdType.FIELD, OrdType.FOREX_MARKET)
                 )
         );
