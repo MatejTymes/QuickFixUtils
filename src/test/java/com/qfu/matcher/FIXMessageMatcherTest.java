@@ -1,7 +1,6 @@
 package com.qfu.matcher;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import quickfix.Message;
 import quickfix.field.*;
 import quickfix.fix44.ExecutionReport;
