@@ -12,7 +12,9 @@ This utility provides hamcrest matchers for FIX message matching. Usage is as fo
 
 <code>
 import static com.qfu.matcher.FIXMatchers.isFIXMessage;
+
 import static com.qfu.matcher.Group.group;
+
 import static com.qfu.matcher.Header.header;
 
         assertThat(message, isFIXMessage()
