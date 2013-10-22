@@ -7,8 +7,10 @@ import quickfix.FieldNotFound;
 import quickfix.Group;
 import quickfix.Message;
 
-import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static java.lang.String.format;
 
@@ -22,6 +24,16 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
     private final List<FieldValue> headerFieldValues = new ArrayList<FieldValue>();
     private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final Map<GroupId, List<FieldValue>> groupFieldValues = new LinkedHashMap<GroupId, List<FieldValue>>();
+    // TODO: test usage of this class
+    private final FieldMatcher fieldMatcher;
+
+    public FIXMessageMatcher() {
+        this(FieldMatcher.INSTANCE);
+    }
+
+    FIXMessageMatcher(FieldMatcher fieldMatcher) {
+        this.fieldMatcher = fieldMatcher;
+    }
 
     public FIXMessageMatcher ofType(Class<? extends Message> messageType) {
         if (this.messageType != null) {
@@ -78,7 +90,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         }
 
         for (FieldValue fieldValue : fieldValues) {
-            if (!hasFieldValue(message, fieldValue)) {
+            if (!fieldMatcher.hasFieldValue(message, fieldValue)) {
                 matches = false;
                 break;
             }
@@ -87,7 +99,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         if (matches) {
             Message.Header header = message.getHeader();
             for (FieldValue fieldValue : headerFieldValues) {
-                if (!hasFieldValue(header, fieldValue)) {
+                if (!fieldMatcher.hasFieldValue(header, fieldValue)) {
                     matches = false;
                     break;
                 }
@@ -100,7 +112,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
                     Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
 
                     for (FieldValue fieldValue : groupFieldValues.get(groupId)) {
-                        if (!hasFieldValue(group, fieldValue)) {
+                        if (!fieldMatcher.hasFieldValue(group, fieldValue)) {
                             matches = false;
                             break;
                         }
@@ -197,109 +209,6 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
     /* ============================== */
     /* ---     helper methods     --- */
     /* ============================== */
-
-    private boolean hasFieldValue(FieldMap fieldMap, FieldValue fieldValue) {
-        boolean matches;
-
-        int fieldId = fieldValue.getFieldId();
-        Object value = fieldValue.getValue();
-        if (value instanceof String) {
-            matches = hasValue(fieldMap, fieldId, (String) value);
-        } else if (value instanceof Character) {
-            matches = hasValue(fieldMap, fieldId, (Character) value);
-        } else if (value instanceof Integer) {
-            matches = hasValue(fieldMap, fieldId, (Integer) value);
-        } else if (value instanceof Double) {
-            matches = hasValue(fieldMap, fieldId, (Double) value);
-        } else if (value instanceof BigDecimal) {
-            matches = hasValue(fieldMap, fieldId, (BigDecimal) value);
-        } else if (value instanceof Date) {
-            matches = hasValue(fieldMap, fieldId, (Date) value);
-        } else if (value instanceof Boolean) {
-            matches = hasValue(fieldMap, fieldId, (Boolean) value);
-        } else {
-            throw new IllegalArgumentException(format("unable to process field %d with value type %s", fieldId, value.getClass()));
-        }
-        return matches;
-    }
-
-    private boolean hasValue(FieldMap fieldMap, Integer fieldId, String expectedValue) {
-        boolean matches;
-        try {
-            String actualValue = fieldMap.getString(fieldId);
-            matches = expectedValue.equals(actualValue);
-        } catch (FieldNotFound e) {
-            matches = false;
-        }
-        return matches;
-    }
-
-    private boolean hasValue(FieldMap fieldMap, Integer fieldId, int expectedValue) {
-        boolean matches;
-        try {
-            int actualValue = fieldMap.getInt(fieldId);
-            matches = (expectedValue == actualValue);
-        } catch (FieldNotFound e) {
-            matches = false;
-        }
-        return matches;
-    }
-
-    private boolean hasValue(FieldMap fieldMap, Integer fieldId, char expectedValue) {
-        boolean matches;
-        try {
-            char actualValue = fieldMap.getChar(fieldId);
-            matches = (expectedValue == actualValue);
-        } catch (FieldNotFound e) {
-            matches = false;
-        }
-        return matches;
-    }
-
-    private boolean hasValue(FieldMap fieldMap, Integer fieldId, double expectedValue) {
-        boolean matches;
-        try {
-            double actualValue = fieldMap.getDouble(fieldId);
-            matches = (expectedValue == actualValue);
-        } catch (FieldNotFound e) {
-            matches = false;
-        }
-        return matches;
-    }
-
-    private boolean hasValue(FieldMap fieldMap, Integer fieldId, BigDecimal expectedValue) {
-        boolean matches;
-        try {
-            BigDecimal actualValue = fieldMap.getDecimal(fieldId);
-            matches = (expectedValue.compareTo(actualValue) == 0);
-        } catch (FieldNotFound fieldNotFound) {
-            matches = false;
-        }
-        return matches;
-    }
-
-    private boolean hasValue(FieldMap fieldMap, Integer fieldId, boolean expectedValue) {
-        boolean matches;
-        try {
-            boolean actualValue = fieldMap.getBoolean(fieldId);
-            matches = (expectedValue == actualValue);
-        } catch (FieldNotFound e) {
-            matches = false;
-        }
-        return matches;
-    }
-
-    private boolean hasValue(FieldMap fieldMap, Integer fieldId, Date expectedValue) {
-        boolean matches;
-        try {
-            // FIXME: there are 3 different methods: getUtcTimeStamp, getUtcTimeOnly, getUtcDateOnly - use all of them
-            Date actualValue = fieldMap.getUtcTimeStamp(fieldId);
-            matches = expectedValue.equals(actualValue);
-        } catch (FieldNotFound e) {
-            matches = false;
-        }
-        return matches;
-    }
 
     private void describeActualValues(FieldMap fieldMap, List<FieldValue> fieldValues, Description description) {
         description.appendText("[");
