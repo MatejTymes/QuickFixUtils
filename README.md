@@ -11,11 +11,11 @@ Hamcrest Matchers
 This utility provides hamcrest matchers for FIX message matching. Usage is as follows:
 
 <code>
-...
 import static com.qfu.matcher.FIXMatchers.isFIXMessage;
-...
+</code>
 
-        assertThat(message, new FIXMessageMatcher()
+<code>
+        assertThat(message, isFIXMessage()
                 .ofType(NewOrderList.class)
                 .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
                 .with(ListID.FIELD, "listId-123")
