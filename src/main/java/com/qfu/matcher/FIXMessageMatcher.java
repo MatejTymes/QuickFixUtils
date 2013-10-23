@@ -2,10 +2,7 @@ package com.qfu.matcher;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import quickfix.FieldMap;
-import quickfix.FieldNotFound;
-import quickfix.Group;
-import quickfix.Message;
+import quickfix.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,7 +21,6 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
     private final List<FieldValue> headerFieldValues = new ArrayList<FieldValue>();
     private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
     private final Map<GroupId, List<FieldValue>> groupFieldValues = new LinkedHashMap<GroupId, List<FieldValue>>();
-    // TODO: test usage of this class
     private final FieldMatcher fieldMatcher;
 
     public FIXMessageMatcher() {
@@ -43,6 +39,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         return this;
     }
 
+    @Deprecated
     public FIXMessageMatcher withHeaderField(int fieldId, Object value) {
         headerFieldValues.add(new FieldValue(fieldId, value));
         return this;
@@ -53,11 +50,17 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         return this;
     }
 
+    public FIXMessageMatcher with(Field field) {
+        fieldValues.add(new FieldValue(field.getTag(), field.getObject()));
+        return this;
+    }
+
     public FIXMessageMatcher with(int fieldId, Object value) {
         fieldValues.add(new FieldValue(fieldId, value));
         return this;
     }
 
+    @Deprecated
     public FIXMessageMatcher withGroupField(int groupIndex, int groupTag, int fieldId, Object value) {
         GroupId groupId = new GroupId(groupIndex, groupTag);
         FieldValue fieldValue = new FieldValue(fieldId, value);
@@ -109,7 +112,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         if (matches) {
             for (GroupId groupId : groupFieldValues.keySet()) {
                 try {
-                    Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
+                    quickfix.Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
 
                     for (FieldValue fieldValue : groupFieldValues.get(groupId)) {
                         if (!fieldMatcher.hasFieldValue(group, fieldValue)) {
@@ -169,7 +172,7 @@ public class FIXMessageMatcher extends TypeSafeMatcher<Message> {
         }
         for (GroupId groupId : groupFieldValues.keySet()) {
             try {
-                Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
+                quickfix.Group group = message.getGroup(groupId.getIndex(), groupId.getGroupTag());
 
                 description.appendText(format(" with %d. group %d values: ", groupId.getIndex(), groupId.getGroupTag()));
                 describeActualValues(group, groupFieldValues.get(groupId), description);

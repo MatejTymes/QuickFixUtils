@@ -4,7 +4,6 @@ package com.qfu.matcher;
  * @author mtymes
  * @since 10/1/13 2:59 PM
  */
-// TODO: add group matcher
 class GroupId {
 
     private final int index;

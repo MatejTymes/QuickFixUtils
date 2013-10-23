@@ -1,5 +1,7 @@
 package com.qfu.matcher;
 
+import quickfix.Field;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +16,11 @@ public class Header {
 
     public static Header header() {
         return new Header();
+    }
+
+    public Header with(Field field) {
+        fieldValues.add(new FieldValue(field.getTag(), field.getObject()));
+        return this;
     }
 
     public Header with(int fieldId, Object value) {

@@ -1,29 +1,41 @@
 package com.qfu.matcher;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import quickfix.FieldNotFound;
 import quickfix.Message;
 import quickfix.field.*;
 import quickfix.fix44.ExecutionReport;
 import quickfix.fix44.NewOrderList;
 import quickfix.fix44.NewOrderSingle;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 import static com.qfu.matcher.Group.group;
 import static com.qfu.matcher.Header.header;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
 
 /**
  * @author mtymes
  * @since 9/29/13 8:18 PM
  */
+@RunWith(MockitoJUnitRunner.class)
 public class FIXMessageMatcherTest {
 
+    private Message message = new Message();
+    private Message.Header header = message.getHeader();
+
+    @Mock
+    private FieldMatcher fieldMatcher;
+
     @Test
-    public void shouldMatchBasedOnFIXMessageType() {
+    public void shouldMatchFIXMessageType() {
         // Given
         NewOrderSingle message = new NewOrderSingle();
 
@@ -44,54 +56,139 @@ public class FIXMessageMatcherTest {
     }
 
     @Test
-    public void shouldMatchFIXMessageBasedOnFieldValues() {
+    public void shouldMatchFieldObject() {
         // Given
-        NewOrderSingle message = new NewOrderSingle();
-        message.set(new ClOrdID("clOrdId-123")); // String field
-        message.set(new Side(Side.BUY)); // char field
-        message.set(new PriceType(PriceType.FIXED_AMOUNT)); // int field
-        message.set(new Price(1.25d)); // double/decimal field
-        Date now = new Date();
-        message.set(new TransactTime(now)); // Date field
-        message.set(new SolicitedFlag(false)); // boolean field
+        when(fieldMatcher.hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(true);
 
-        // When & Then
-        // String
-        assertThat(message, new FIXMessageMatcher().with(ClOrdID.FIELD, "clOrdId-123"));
-        assertThat(message, not(new FIXMessageMatcher().with(ClOrdID.FIELD, "clOrdId-456")));
-        // char
-        assertThat(message, new FIXMessageMatcher().with(Side.FIELD, Side.BUY));
-        assertThat(message, not(new FIXMessageMatcher().with(Side.FIELD, Side.SELL)));
-        // int
-        assertThat(message, new FIXMessageMatcher().with(PriceType.FIELD, PriceType.FIXED_AMOUNT));
-        assertThat(message, not(new FIXMessageMatcher().with(PriceType.FIELD, PriceType.DISCOUNT)));
-        // double
-        assertThat(message, new FIXMessageMatcher().with(Price.FIELD, 1.25d));
-        assertThat(message, not(new FIXMessageMatcher().with(Price.FIELD, 3.5d)));
-        // BigDecimal
-        assertThat(message, new FIXMessageMatcher().with(Price.FIELD, new BigDecimal("1.25")));
-        assertThat(message, not(new FIXMessageMatcher().with(Price.FIELD, new BigDecimal("3.5"))));
-        // Date
-        assertThat(message, new FIXMessageMatcher().with(TransactTime.FIELD, now));
-        assertThat(message, not(new FIXMessageMatcher().with(TransactTime.FIELD, new Date(now.getTime() + 100L))));
-        // boolean
-        assertThat(message, new FIXMessageMatcher().with(SolicitedFlag.FIELD, false));
-        assertThat(message, not(new FIXMessageMatcher().with(SolicitedFlag.FIELD, true)));
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(new ClOrdID("clOrdId-123"))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(true));
+
+        verify(fieldMatcher).hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
     }
 
     @Test
-    public void shouldMatchFIXMessageBasedOnHeaderFieldValues() {
+    public void shouldNotMatchFieldObject() {
         // Given
-        NewOrderSingle message = new NewOrderSingle();
-        Message.Header header = message.getHeader();
-        header.setField(new SenderSubID("senderSubId-123"));
-        // TODO: add remaining data types
+        when(fieldMatcher.hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(false);
 
-        // When & Then
-        assertThat(message, new FIXMessageMatcher().withHeaderField(SenderSubID.FIELD, "senderSubId-123"));
-        assertThat(message, new FIXMessageMatcher().with(header().with(SenderSubID.FIELD, "senderSubId-123")));
-        assertThat(message, not(new FIXMessageMatcher().withHeaderField(SenderSubID.FIELD, "senderSubId-456")));
-        assertThat(message, not(new FIXMessageMatcher().with(header().with(SenderSubID.FIELD, "senderSubId-456"))));
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(new ClOrdID("clOrdId-123"))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(false));
+
+        verify(fieldMatcher).hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldMatchFieldValue() {
+        // Given
+        when(fieldMatcher.hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(true);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(ClOrdID.FIELD, "clOrdId-123")
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(true));
+
+        verify(fieldMatcher).hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldNotMatchFieldValue() {
+        // Given
+        when(fieldMatcher.hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(false);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(ClOrdID.FIELD, "clOrdId-123")
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(false));
+
+        verify(fieldMatcher).hasFieldValue(message, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldMatchHeaderFieldObject() {
+        // Given
+        when(fieldMatcher.hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"))).thenReturn(true);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(header().with(new SenderSubID("senderSubId-123")))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(true));
+
+        verify(fieldMatcher).hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldNotMatchHeaderFieldObject() {
+        // Given
+        when(fieldMatcher.hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"))).thenReturn(false);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(header().with(new SenderSubID("senderSubId-123")))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(false));
+
+        verify(fieldMatcher).hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldMatchHeaderFieldValue() {
+        // Given
+        when(fieldMatcher.hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"))).thenReturn(true);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(true));
+
+        verify(fieldMatcher).hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldNotMatchHeaderFieldValue() {
+        // Given
+        when(fieldMatcher.hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"))).thenReturn(false);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(false));
+
+        verify(fieldMatcher).hasFieldValue(header, new FieldValue(SenderSubID.FIELD, "senderSubId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
     }
 
     @Test
@@ -109,55 +206,87 @@ public class FIXMessageMatcherTest {
     }
 
     @Test
-    public void shouldMatchFIXMessageBasedOnGroupFieldValue() {
+    public void shouldMatchGroupFieldObject() throws FieldNotFound {
         // Given
-        Message message = new NewOrderList();
-        NewOrderList.NoOrders group = new NewOrderList.NoOrders();
-        group.set(new ClOrdID("clOrdId-123")); // String field
-        group.set(new Side(Side.BUY)); // char field
-        group.set(new PriceType(PriceType.FIXED_AMOUNT)); // int field
-        group.set(new Price(1.25d)); // double/decimal field
-        Date now = new Date();
-        group.set(new TransactTime(now)); // Date field
-        group.set(new SolicitedFlag(false));
-        message.addGroup(group);
+        message.addGroup(new NewOrderList.NoOrders());
+        quickfix.Group group = message.getGroup(1, NoOrders.FIELD);
 
-        // When & Then
-        // String
-        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123"));
-        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-123")));
-        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-456")));
-        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(ClOrdID.FIELD, "clOrdId-456"))));
-        // char
-        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.BUY));
-        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.BUY)));
-        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.SELL)));
-        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Side.FIELD, Side.SELL))));
-        // int
-        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.FIXED_AMOUNT));
-        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.FIXED_AMOUNT)));
-        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, PriceType.FIELD, PriceType.DISCOUNT)));
-        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(PriceType.FIELD, PriceType.DISCOUNT))));
-        // double
-        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, 1.25d));
-        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, 1.25d)));
-        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, 3.5d)));
-        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, 3.5d))));
-        // BigDecimal
-        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("1.25")));
-        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("1.25"))));
-        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, Price.FIELD, new BigDecimal("3.5"))));
-        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(Price.FIELD, new BigDecimal("3.5")))));
-        // Date
-        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, now));
-        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, now)));
-        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, new Date(now.getTime() + 100L))));
-        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(TransactTime.FIELD, new Date(now.getTime() + 100L)))));
-        // BigDecimal
-        assertThat(message, new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, false));
-        assertThat(message, new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, false)));
-        assertThat(message, not(new FIXMessageMatcher().withGroupField(1, NoOrders.FIELD, SolicitedFlag.FIELD, true)));
-        assertThat(message, not(new FIXMessageMatcher().with(group(1, NoOrders.FIELD).with(SolicitedFlag.FIELD, true))));
+        when(fieldMatcher.hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(true);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(group(1, NoOrders.FIELD)
+                        .with(new ClOrdID("clOrdId-123")))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(true));
+
+        verify(fieldMatcher).hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldNotMatchGroupFieldObject() throws FieldNotFound {
+        // Given
+        message.addGroup(new NewOrderList.NoOrders());
+        quickfix.Group group = message.getGroup(1, NoOrders.FIELD);
+
+        when(fieldMatcher.hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(false);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(group(1, NoOrders.FIELD)
+                        .with(new ClOrdID("clOrdId-123")))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(false));
+
+        verify(fieldMatcher).hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldMatchGroupFieldValue() throws FieldNotFound {
+        // Given
+        message.addGroup(new NewOrderList.NoOrders());
+        quickfix.Group group = message.getGroup(1, NoOrders.FIELD);
+
+        when(fieldMatcher.hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(true);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(group(1, NoOrders.FIELD)
+                        .with(ClOrdID.FIELD, "clOrdId-123"))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(true));
+
+        verify(fieldMatcher).hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
+    }
+
+    @Test
+    public void shouldNotMatchGroupFieldValue() throws FieldNotFound {
+        // Given
+        message.addGroup(new NewOrderList.NoOrders());
+        quickfix.Group group = message.getGroup(1, NoOrders.FIELD);
+
+        when(fieldMatcher.hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"))).thenReturn(false);
+
+        // When
+        boolean matchesMessage = new FIXMessageMatcher(fieldMatcher)
+                .with(group(1, NoOrders.FIELD)
+                        .with(ClOrdID.FIELD, "clOrdId-123"))
+                .matchesSafely(message);
+
+        // Then
+        assertThat(matchesMessage, is(false));
+
+        verify(fieldMatcher).hasFieldValue(group, new FieldValue(ClOrdID.FIELD, "clOrdId-123"));
+        verifyNoMoreInteractions(fieldMatcher);
     }
 
     @Test
@@ -179,18 +308,6 @@ public class FIXMessageMatcherTest {
         // When & Then
         assertThat(message, new FIXMessageMatcher()
                 .ofType(NewOrderList.class)
-                .withHeaderField(SenderSubID.FIELD, "senderSubId-123")
-                .with(ListID.FIELD, "listId-123")
-                .with(BidType.FIELD, BidType.NON_DISCLOSED)
-                .with(TotNoOrders.FIELD, 1)
-                .withGroupField(1, NoOrders.FIELD, ClOrdID.FIELD, "clOrdId-123")
-                .withGroupField(1, NoOrders.FIELD, Side.FIELD, Side.SELL)
-                .withGroupField(1, NoOrders.FIELD, TransactTime.FIELD, now)
-                .withGroupField(1, NoOrders.FIELD, OrdType.FIELD, OrdType.FOREX_MARKET)
-        );
-
-        assertThat(message, new FIXMessageMatcher()
-                .ofType(NewOrderList.class)
                 .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
                 .with(ListID.FIELD, "listId-123")
                 .with(BidType.FIELD, BidType.NON_DISCLOSED)
@@ -200,6 +317,20 @@ public class FIXMessageMatcherTest {
                         .with(Side.FIELD, Side.SELL)
                         .with(TransactTime.FIELD, now)
                         .with(OrdType.FIELD, OrdType.FOREX_MARKET)
+                )
+        );
+
+        assertThat(message, new FIXMessageMatcher()
+                .ofType(NewOrderList.class)
+                .with(header().with(new SenderSubID("senderSubId-123")))
+                .with(new ListID("listId-123"))
+                .with(new BidType(BidType.NON_DISCLOSED))
+                .with(new TotNoOrders(1))
+                .with(group(1, NoOrders.FIELD)
+                        .with(new ClOrdID("clOrdId-123"))
+                        .with(new Side(Side.SELL))
+                        .with(new TransactTime(now))
+                        .with(new OrdType(OrdType.FOREX_MARKET))
                 )
         );
     }

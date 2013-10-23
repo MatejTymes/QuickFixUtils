@@ -1,5 +1,7 @@
 package com.qfu.matcher;
 
+import quickfix.Field;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +21,11 @@ public class Group {
 
     public static Group group(int groupIndex, int groupTag) {
         return new Group(new GroupId(groupIndex, groupTag));
+    }
+
+    public Group with(Field field) {
+        fieldValues.add(new FieldValue(field.getTag(), field.getObject()));
+        return this;
     }
 
     public Group with(int fieldId, Object value) {
