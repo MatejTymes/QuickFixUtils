@@ -4,8 +4,6 @@ package com.qfu.matcher;
  * @author mtymes
  * @since 10/1/13 2:53 PM
  */
-// TODO: test for non-defined fields as well
-// TODO: change into field matcher
 class FieldValue {
 
     private final int fieldId;

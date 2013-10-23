@@ -17,12 +17,32 @@ import static org.junit.Assert.assertThat;
  */
 public class FieldMatcherTest {
 
+    private final FieldMap fieldMap = new Message();
+
     private FieldMatcher fieldMatcher = new FieldMatcher();
+
+    @Test
+    public void shouldFindFieldIsMissing() {
+        // When & Then
+        // String
+        assertThat(fieldMatcher.hasFieldValue(fieldMap, fieldValue(ClOrdID.FIELD, "clOrdId-123")), is(false));
+        // char
+        assertThat(fieldMatcher.hasFieldValue(fieldMap, fieldValue(Side.FIELD, Side.BUY)), is(false));
+        // int
+        assertThat(fieldMatcher.hasFieldValue(fieldMap, fieldValue(NumDaysInterest.FIELD, 3)), is(false));
+        // double
+        assertThat(fieldMatcher.hasFieldValue(fieldMap, fieldValue(Price.FIELD, 1.25d)), is(false));
+        // BigDecimal
+        assertThat(fieldMatcher.hasFieldValue(fieldMap, fieldValue(Price.FIELD, new BigDecimal("1.25"))), is(false));
+        // Date
+        assertThat(fieldMatcher.hasFieldValue(fieldMap, fieldValue(TransactTime.FIELD, new Date())), is(false));
+        // boolean
+        assertThat(fieldMatcher.hasFieldValue(fieldMap, fieldValue(SolicitedFlag.FIELD, false)), is(false));
+    }
 
     @Test
     public void shouldFindIfHasStringFieldValue() {
         // Given
-        FieldMap fieldMap = new Message();
         fieldMap.setField(new ClOrdID("clOrdId-123"));
 
         // When & Then
@@ -33,7 +53,6 @@ public class FieldMatcherTest {
     @Test
     public void shouldFindIfHasCharacterFieldValue() {
         // Given
-        FieldMap fieldMap = new Message();
         fieldMap.setField(new Side(Side.BUY));
 
         // When & Then
@@ -44,7 +63,6 @@ public class FieldMatcherTest {
     @Test
     public void shouldFindIfHasIntegerFieldValue() {
         // Given
-        FieldMap fieldMap = new Message();
         fieldMap.setField(new PriceType(PriceType.FIXED_AMOUNT));
         fieldMap.setField(new NumDaysInterest(3));
 
@@ -59,7 +77,6 @@ public class FieldMatcherTest {
     @Test
     public void shouldFindIfHasDoubleFieldValue() {
         // Given
-        FieldMap fieldMap = new Message();
         fieldMap.setField(new Price(1.25d));
 
         // When & Then
@@ -70,7 +87,6 @@ public class FieldMatcherTest {
     @Test
     public void shouldFindIfHasBigDecimalFieldValue() {
         // Given
-        FieldMap fieldMap = new Message();
         fieldMap.setField(new Price(1.25d));
 
         // When & Then
@@ -82,7 +98,6 @@ public class FieldMatcherTest {
     public void shouldFindIfHasDateFieldValue() {
         // Given
         Date now = new Date();
-        FieldMap fieldMap = new Message();
         fieldMap.setField(new TransactTime(now));
 
         // When & Then
@@ -93,7 +108,6 @@ public class FieldMatcherTest {
     @Test
     public void shouldFindIfHasBooleanFieldValue() {
         // Given
-        FieldMap fieldMap = new Message();
         fieldMap.setField(new SolicitedFlag(false));
 
         // When & Then

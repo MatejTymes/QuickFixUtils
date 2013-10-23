@@ -9,7 +9,6 @@ import java.util.List;
  * @author mtymes
  * @since 10/2/13 12:21 AM
  */
-// TODO: change into header matcher
 public class Header {
 
     private final List<FieldValue> fieldValues = new ArrayList<FieldValue>();
