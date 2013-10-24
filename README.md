@@ -17,23 +17,8 @@ import static com.qfu.matcher.Group.group;
 import static com.qfu.matcher.Header.header;
 ...
 
-        // use field objects with value
-        assertThat(message, new FIXMessageMatcher()
-                .ofType(NewOrderList.class)
-                .with(header().with(new SenderSubID("senderSubId-123")))
-                .with(new ListID("listId-123"))
-                .with(new BidType(BidType.NON_DISCLOSED))
-                .with(new TotNoOrders(1))
-                .with(group(1, NoOrders.FIELD)
-                        .with(new ClOrdID("clOrdId-123"))
-                        .with(new Side(Side.SELL))
-                        .with(new TransactTime(now))
-                        .with(new OrdType(OrdType.FOREX_MARKET))
-                )
-        );
-
-        // or field ids and value
-        assertThat(message, new FIXMessageMatcher()
+        // use field id and value
+        assertThat(message, isFIXMessage()
                 .ofType(NewOrderList.class)
                 .with(header().with(SenderSubID.FIELD, "senderSubId-123"))
                 .with(ListID.FIELD, "listId-123")
@@ -42,8 +27,25 @@ import static com.qfu.matcher.Header.header;
                 .with(group(1, NoOrders.FIELD)
                         .with(ClOrdID.FIELD, "clOrdId-123")
                         .with(Side.FIELD, Side.SELL)
-                        .with(TransactTime.FIELD, now)
+                        .with(Price.FIELD, new BigDecimal("1.25"))
+                        .with(TransactTime.FIELD, new Date())
                         .with(OrdType.FIELD, OrdType.FOREX_MARKET)
+                )
+        );
+
+        // or field object with value
+        assertThat(message, isFIXMessage()
+                .ofType(NewOrderList.class)
+                .with(header().with(new SenderSubID("senderSubId-123")))
+                .with(new ListID("listId-123"))
+                .with(new BidType(BidType.NON_DISCLOSED))
+                .with(new TotNoOrders(1))
+                .with(group(1, NoOrders.FIELD)
+                        .with(new ClOrdID("clOrdId-123"))
+                        .with(new Side(Side.SELL))
+                        .with(new Price(new BigDecimal("1.25")))
+                        .with(new TransactTime(new Date()))
+                        .with(new OrdType(OrdType.FOREX_MARKET))
                 )
         );
 ```
